@@ -189,18 +189,18 @@ if (WIDER_IF == WRITE) begin // Write address is wider than read
   // for our calculations
   assign s_axis_full_s = (s_axis_raddr_reg_s[RD_ADDRESS_WIDTH] != s_axis_waddr_next[WR_ADDRESS_WIDTH]) &&
                          (s_axis_raddr_reg_s[RD_ADDRESS_WIDTH-1:0]-1'b1 == s_axis_waddr_next[WR_ADDRESS_WIDTH-1:ASPECT_RATIO]);
-  assign s_axis_ready_s = ~s_axis_full_s;
   assign s_axis_room_s = MAX_ROOM + s_axis_raddr_reg_s[RD_ADDRESS_WIDTH-1:0] - s_axis_waddr_next[WR_ADDRESS_WIDTH-1:ASPECT_RATIO];
 
 end else begin // Read address is wider than write address
 
   assign s_axis_full_s = (s_axis_raddr_reg_s[RD_ADDRESS_WIDTH] != s_axis_waddr_next[WR_ADDRESS_WIDTH]) &&
                          (s_axis_raddr_reg_s[RD_ADDRESS_WIDTH-1:ASPECT_RATIO] == s_axis_waddr_next[WR_ADDRESS_WIDTH-1:0]);
-  assign s_axis_ready_s = ~s_axis_full_s;
   assign s_axis_room_s = s_axis_raddr_reg_s[RD_ADDRESS_WIDTH-1:ASPECT_RATIO] - s_axis_waddr_next[WR_ADDRESS_WIDTH-1:0] + MAX_ROOM;
 
 end
 endgenerate
+
+assign s_axis_ready_s = ~s_axis_full_s;
 
 always @(posedge s_axis_aclk)
 begin
@@ -228,7 +228,7 @@ if (WIDER_IF == WRITE) begin // Write address is wider than read
 
   assign m_axis_empty_s = m_axis_waddr_reg_s[WR_ADDRESS_WIDTH:ASPECT_RATIO] == m_axis_raddr_next;
   assign m_axis_valid_s = ~m_axis_empty_s;
-  assign m_axis_level_s = m_axis_waddr_reg_s[WR_ADDRESS_WIDTH:0] - {m_axis_raddr_next, {ASPECT_RATIO{1'b1}}};
+  assign m_axis_level_s = m_axis_waddr_reg_s[WR_ADDRESS_WIDTH:ASPECT_RATIO] - m_axis_raddr_next;
 
 end else begin // Read address is wider than write address
 
