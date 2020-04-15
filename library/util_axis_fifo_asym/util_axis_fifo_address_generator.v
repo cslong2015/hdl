@@ -53,7 +53,7 @@ module util_axis_fifo_address_generator #(
 
   input s_axis_aclk,
   input s_axis_aresetn,
-  output reg s_axis_ready = 1'b0,
+  output reg s_axis_ready = 1'b1,
   input s_axis_valid,
   output reg s_axis_full = 1'b0,
   output [WR_ADDRESS_WIDTH-1:0] s_axis_waddr,
