@@ -34,8 +34,6 @@
 // ***************************************************************************
 `timescale 1ns/1ps
 
-`timescale 1ns/100ps
-
 module util_axis_fifo_asym #(
   parameter WR_DATA_WIDTH = 64,
   parameter WR_ADDRESS_WIDTH = 5,
@@ -61,7 +59,7 @@ module util_axis_fifo_asym #(
   output s_axis_full
 );
 
-generate if (WR_ADDRESS_WIDTH == 0) begin /* it's not a real FIFO, just a 2 stage CDC */
+generate if (WR_ADDRESS_WIDTH == 0) begin : onebit /* it's not a real FIFO, just a 2 stage CDC */
 
   // Note: In this mode, the write and read interface must have a symmetric
   // aspect ratio.
@@ -125,7 +123,7 @@ generate if (WR_ADDRESS_WIDTH == 0) begin /* it's not a real FIFO, just a 2 stag
 
   assign m_axis_data = cdc_sync_fifo_ram;
 
-end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
+end else begin : fifo /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
 
   wire [WR_ADDRESS_WIDTH-1:0] s_axis_waddr;
   wire [RD_ADDRESS_WIDTH-1:0] m_axis_raddr;
@@ -136,7 +134,7 @@ end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
   wire s_mem_write;
   wire m_mem_read;
 
-  reg valid;
+  reg valid = 1'b0;
 
   /* Control for first falls through */
   always @(posedge m_axis_aclk) begin
@@ -174,13 +172,13 @@ end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
     .s_axis_room(s_axis_room)
   );
 
-  if (ASYNC_CLK == 1) begin /* Asynchronous WRITE/READ clocks */
+  if (ASYNC_CLK == 1) begin : async_clocks /* Asynchronous WRITE/READ clocks */
 
     // The assumption is that in this mode the M_AXIS_REGISTERED is 1
     // When the clocks are asynchronous instantiate a block RAM
     // regardless of the requested size to make sure we threat the
     // clock crossing correctly
-    if (WR_DATA_WIDTH == RD_DATA_WIDTH) begin /* Symmetric WRITE/READ interface */
+    if (WR_DATA_WIDTH == RD_DATA_WIDTH) begin : async_symmetric_data /* Symmetric WRITE/READ interface */
       ad_mem #(
         .DATA_WIDTH (WR_DATA_WIDTH),
         .ADDRESS_WIDTH (WR_ADDRESS_WIDTH))
@@ -194,7 +192,7 @@ end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
         .addrb(m_axis_raddr),
         .doutb(m_axis_data)
       );
-    end else begin /* Asymmetric aspect ratio */
+    end else begin : async_assymetric_data /* Asymmetric aspect ratio */
       ad_mem_asym #(
         .A_DATA_WIDTH (WR_DATA_WIDTH),
         .A_ADDRESS_WIDTH (WR_ADDRESS_WIDTH),
@@ -219,13 +217,13 @@ end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
     // the actual FIFO level plus the available data, which sits on the bus
     assign m_axis_level =  (m_axis_valid) ? _m_axis_level + 1'b1 : _m_axis_level;
 
-  end else begin /* Synchronous WRITE/READ clocks */
+  end else begin : sync_clocks /* Synchronous WRITE/READ clocks */
 
     reg [WR_DATA_WIDTH-1:0] ram[0:2**WR_ADDRESS_WIDTH-1];
 
     // When the clocks are synchronous use behavioral modeling for the SDP RAM
     // Let the synthesizer decide what to infer (distributed or block RAM)
-    if (WR_DATA_WIDTH == RD_DATA_WIDTH) begin /* Symmetric WRITE/READ interface */
+    if (WR_DATA_WIDTH == RD_DATA_WIDTH) begin : sync_symmetric_data /* Symmetric WRITE/READ interface */
       always @(posedge s_axis_aclk) begin
         if (s_mem_write)
           ram[s_axis_waddr] <= s_axis_data;
@@ -251,7 +249,7 @@ end else begin /* WR_ADDRESS_WIDTH != 0 - this is a real FIFO implementation */
         assign m_axis_data = ram[m_axis_raddr];
 
       end
-    end else begin /* Asymmetric aspect ratio */
+    end else begin : sync_asymmetric_data /* Asymmetric aspect ratio */
       ad_mem_asym #(
         .A_DATA_WIDTH (WR_DATA_WIDTH),
         .A_ADDRESS_WIDTH (WR_ADDRESS_WIDTH),
