@@ -168,6 +168,19 @@ wire exec_chipselect_cmd = exec_cmd && inst == CMD_CHIPSELECT;
 wire exec_misc_cmd = exec_cmd && inst == CMD_MISC;
 wire exec_sync_cmd = exec_misc_cmd && cmd[8] == MISC_SYNC;
 
+wire trigger_tx;
+wire trigger_rx;
+
+wire sleep_counter_compare;
+wire cs_sleep_counter_compare;
+wire cs_sleep_counter_compare2;
+
+wire io_ready1;
+wire io_ready2;
+wire trigger_rx_s;
+
+wire last_sdi_bit;
+
 assign cmd_ready = idle;
 
 always @(posedge clk) begin
@@ -229,12 +242,12 @@ always @(posedge clk) begin
   end
 end
 
-wire trigger_tx = trigger == 1'b1 && ntx_rx == 1'b0;
-wire trigger_rx = trigger == 1'b1 && ntx_rx == 1'b1;
+assign trigger_tx = trigger == 1'b1 && ntx_rx == 1'b0;
+assign trigger_rx = trigger == 1'b1 && ntx_rx == 1'b1;
 
-wire sleep_counter_compare = sleep_counter == cmd_d1[7:0] && clk_div_last == 1'b1;
-wire cs_sleep_counter_compare = cs_sleep_counter == cmd_d1[9:8] && clk_div_last == 1'b1;
-wire cs_sleep_counter_compare2 = cs_sleep_counter2 == {cmd_d1[9:8],1'b1} && clk_div_last == 1'b1;
+assign sleep_counter_compare = sleep_counter == cmd_d1[7:0] && clk_div_last == 1'b1;
+assign cs_sleep_counter_compare = cs_sleep_counter == cmd_d1[9:8] && clk_div_last == 1'b1;
+assign cs_sleep_counter_compare2 = cs_sleep_counter2 == {cmd_d1[9:8],1'b1} && clk_div_last == 1'b1;
 
 always @(posedge clk) begin
   if (idle == 1'b1) begin
@@ -321,9 +334,9 @@ always @(posedge clk) begin
     sdi_data_valid <= 1'b0;
 end
 
-wire io_ready1 = (sdi_data_valid == 1'b0 || sdi_data_ready == 1'b1) &&
+assign io_ready1 = (sdi_data_valid == 1'b0 || sdi_data_ready == 1'b1) &&
         (sdo_enabled == 1'b0 || last_transfer == 1'b1 || sdo_data_valid == 1'b1);
-wire io_ready2 = (sdi_enabled == 1'b0 || sdi_data_ready == 1'b1) &&
+assign io_ready2 = (sdi_enabled == 1'b0 || sdi_data_ready == 1'b1) &&
         (sdo_enabled == 1'b0 || last_transfer == 1'b1 || sdo_data_valid == 1'b1);
 
 always @(posedge clk) begin
@@ -398,7 +411,7 @@ always @(posedge clk) begin
   trigger_rx_d3 <= trigger_rx_d2;
 end
 
-wire trigger_rx_s = (SDI_DELAY == 2'b00) ? trigger_rx :
+assign trigger_rx_s = (SDI_DELAY == 2'b00) ? trigger_rx :
                     (SDI_DELAY == 2'b01) ? trigger_rx_d1 :
                     (SDI_DELAY == 2'b10) ? trigger_rx_d2 :
                     (SDI_DELAY == 2'b11) ? trigger_rx_d3 : trigger_rx;
@@ -446,7 +459,7 @@ assign sdi_data = (NUM_OF_SDI == 1) ? data_sdi_shift :
                                        data_sdi_shift_3, data_sdi_shift_2,
                                        data_sdi_shift_1, data_sdi_shift} : data_sdi_shift;
 
-wire last_sdi_bit = (sdi_counter == word_length-1);
+assign last_sdi_bit = (sdi_counter == word_length-1);
 always @(posedge clk) begin
   if (resetn == 1'b0) begin
     sdi_counter <= 8'b0;
